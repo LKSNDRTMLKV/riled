@@ -211,31 +211,32 @@ model Goal {
 // }
 
 model Competition {
-  id            String        @id @default(cuid())
-  name          String        @unique
+  id            String         @id @default(cuid())
+  name          String         @unique
   countryId     String?
-  country       Country?      @relation(name: "CountryToCompetition", fields: [countryId], references: [id], onUpdate: Cascade)
-  seasons       Season[]
+  country       Country?       @relation(name: "CountryToCompetition", fields: [countryId], references: [id], onUpdate: Cascade)
+  // seasons       Season[]
+  playerSeasons PlayerSeason[] @relation(name: "CompetitionToPlayerSeason")
   confederation Confederation
-  teams         Team[]        @relation(name: "TeamToCompetition")
-  logo          Logo?         @relation(name: "LogoToCompetition")
+  teams         Team[]         @relation(name: "TeamToCompetition")
+  logo          Logo?          @relation(name: "LogoToCompetition")
   // activeRound String
-  createdAt     DateTime      @default(now()) @map("createdAt")
-  updatedAt     DateTime      @updatedAt @map("updatedAt")
+  createdAt     DateTime       @default(now()) @map("createdAt")
+  updatedAt     DateTime       @updatedAt @map("updatedAt")
 }
 
-model Season {
-  id           String        @id @default(cuid())
-  name         String        @unique
-  yearStart    Int
-  yearEnd      Int
-  competitions Competition[]
-  // trophies     Trophy[]
-  // trophyId     String?
-  // trophy       Trophy?       @relation(name: "SeasonToTrophy", fields: [trophyId], references: [id])
-  createdAt    DateTime      @default(now()) @map("createdAt")
-  updatedAt    DateTime      @updatedAt @map("updatedAt")
-}
+// model Season {
+//   id           String        @id @default(cuid())
+//   name         String        @unique
+//   yearStart    Int
+//   yearEnd      Int
+//   competitions Competition[]
+//   // trophies     Trophy[]
+//   // trophyId     String?
+//   // trophy       Trophy?       @relation(name: "SeasonToTrophy", fields: [trophyId], references: [id])
+//   createdAt    DateTime      @default(now()) @map("createdAt")
+//   updatedAt    DateTime      @updatedAt @map("updatedAt")
+// }
 
 // model Trophy {
 //   id        String   @id @default(cuid())
@@ -264,6 +265,7 @@ model Team {
   awayMatches       Match[]          @relation(name: "AwayTeamToMatch")
   jerseys           Jersey[]
   competitions      Competition[]    @relation(name: "TeamToCompetition")
+  playerSeasons     PlayerSeason[]   @relation(name: "TeamToPlayerSeason")
   transfersIn       Transfer[]       @relation(name: "ToTeamToTransfer")
   transfersOut      Transfer[]       @relation(name: "FromTeamToTransfer")
   createdAt         DateTime         @default(now()) @map("createdAt")
@@ -294,6 +296,7 @@ model Match {
   // yellowCards    YellowCard[]     @relation(name: "YellowCardToMatch")
   // redCards       RedCard[]        @relation(name: "RedCardToMatch")
   formation      FormationType
+  playerSeasons  PlayerSeason[]   @relation(name: "MatchToPlayerSeason")
   odds           Odds[]           @relation(name: "OddsToMatch")
   date           DateTime
   timezone       String?
@@ -327,30 +330,56 @@ model Stats {
 model Player {
   id             String           @id @default(cuid())
   name           String
-  middlename     String?
   surname        String
+  middlename     String?
   age            DateTime?
+  position       SportsPosition?
+  shirt          Int?
   marketValue    Int?
   team           Team?            @relation(name: "TeamToPlayer", fields: [teamId], references: [id], onUpdate: Cascade)
   teamId         String?
   jerseys        Jersey[]
-  shirt          Int
+  status         PlayerStatus     @default(ACTIVE)
+  seasons        PlayerSeason[]   @relation(name: "PlayerToPlayerSeason")
+  // seasons        Season[] @relation(name: "PlayerToSeason")
   sportId        String
   matches        PlayerToMatch[]  @relation(name: "PlayerToMatch")
   sport          Sport            @relation(name: "SportToPlayer", fields: [sportId], references: [id], onUpdate: Cascade)
-  matchesStart   StartingLineup[] @relation("StartingLineupToPlayer")
-  matchesBench   Bench[]          @relation("BenchToPlayer")
+  matchesStart   StartingLineup[] @relation(name: "StartingLineupToPlayer")
+  matchesBench   Bench[]          @relation(name: "BenchToPlayer")
   matchesMissing MissingPlayer[]  @relation(name: "MissingPlayerToPlayer")
-  position       SportsPosition
   goals          Goal[]           @relation(name: "PlayerToGoal")
   substituteIn   Substitution[]   @relation(name: "SubstitutionToPlayerIn")
   substituteOut  Substitution[]   @relation(name: "SubstitutionToPlayerOut")
   cards          Card[]           @relation(name: "CardToPlayer")
-  status         PlayerStatus     @default(ACTIVE)
   transfers      Transfer[]       @relation(name: "PlayerToTransfer")
   injuries       Injury[]         @relation(name: "PlayerToInjury")
   createdAt      DateTime         @default(now()) @map("createdAt")
   updatedAt      DateTime         @updatedAt @map("updatedAt")
+}
+
+model TeamSeason {
+  id String @id @default(cuid())
+}
+
+model PlayerSeason {
+  id          String         @id @default(cuid())
+  seasonStart DateTime
+  seasonEnd   DateTime
+  player      Player         @relation(name: "PlayerToPlayerSeason", fields: [playerId], references: [id])
+  playerId    String         @unique
+  team        Team[]         @relation(name: "TeamToPlayerSeason")
+  competition Competition[]  @relation(name: "CompetitionToPlayerSeason")
+  matches     Match[]        @relation(name: "MatchToPlayerSeason")
+  appearances Int?
+  goals       Int?
+  assists     Int?
+  cleanSheets Int?
+  yellowCards Int?
+  redCards    Int?
+  position    SportsPosition @default(FOOTBALL_GOALKEEPER)
+  createdAt   DateTime       @default(now()) @map("createdAt")
+  updatedAt   DateTime       @updatedAt @map("updatedAt")
 }
 
 model PlayerToMatch {
@@ -422,7 +451,7 @@ model Substitution {
   playerIn    Player         @relation(name: "SubstitutionToPlayerIn", fields: [playerInId], references: [id])
   matchId     String
   match       Match          @relation(name: "SubstitutionToMatch", fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  position    SportsPosition
+  // position    SportsPosition
   createdAt   DateTime       @default(now()) @map("createdAt")
   updatedAt   DateTime       @updatedAt @map("updatedAt")
 
@@ -430,6 +459,7 @@ model Substitution {
 }
 
 model Card {
+  id        String   @id @default(cuid())
   playerId  String
   player    Player   @relation(name: "CardToPlayer", fields: [playerId], references: [id])
   matchId   String
@@ -439,7 +469,7 @@ model Card {
   createdAt DateTime @default(now()) @map("createdAt")
   updatedAt DateTime @updatedAt @map("updatedAt")
 
-  @@id([playerId, matchId, cardType])
+  @@index([playerId, matchId, cardType])
 }
 
 model HalfTime {
