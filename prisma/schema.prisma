@@ -1,743 +1,98 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
-model User {
-  id                    String                 @id @default(cuid())
-  name                  String?
-  email                 String?                @unique
-  emailVerified         DateTime
-  logo                  Logo?                  @relation(name: "LogoToUser")
-  password              String?
-  role                  UserRole
-  account               Account?               @relation(name: "UserToAccount")
-  isTwoFactorEnabled    Boolean                @default(false)
-  twoFactorConfirmation TwoFactorConfirmation?
-  createdAt             DateTime               @default(now()) @map("createdAt")
-  updatedAt             DateTime               @updatedAt @map("updatedAt")
-}
-
-model Account {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(name: "UserToAccount", fields: [userId], references: [id], onDelete: Cascade)
-  favouriteTeams    Team[]
-  type              String
-  provider          String   @unique
-  providerAccountId String   @unique
-  refreshToken      String?  @map("refresh_token")
-  accessToken       String?  @map("access_token")
-  expiresAt         Int?     @map("expires_at")
-  tokenType         String?
-  scope             String?
-  idToken           String?  @map("id_token")
-  session_state     String?  @map("session_state")
-  createdAt         DateTime @default(now()) @map("createdAt")
-  updatedAt         DateTime @updatedAt @map("updatedAt")
-}
-
-model PasswordResetToken {
-  id      String   @id @default(cuid())
-  email   String   @unique
-  token   String   @unique
-  expires DateTime
-}
-
-model TwoFactorToken {
-  id      String   @id @default(cuid())
-  email   String   @unique
-  token   String   @unique
-  expires DateTime
-}
-
-model TwoFactorConfirmation {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Planet {
-  id              String          @id @default(cuid())
-  continents      Continent[]     @relation(name: "PlatetToContinent")
-  environmentMode EnvironmentMode @default(VIRTUAL)
-}
-
-model Continent {
-  id              String          @id @default(cuid())
-  name            String          @unique
-  planetId        String
-  planet          Planet          @relation(name: "PlatetToContinent", fields: [planetId], references: [id], onUpdate: Cascade)
-  counrties       Country[]       @relation(name: "ContinentToCountry")
-  environmentMode EnvironmentMode @default(VIRTUAL)
-  createdAt       DateTime        @default(now()) @map("createdAt")
-  updatedAt       DateTime        @updatedAt @map("updatedAt")
-}
+//STANDINGS LEAGUE/SEASON
 
 model Country {
-  id              String          @id @default(cuid())
-  name            String          @unique
-  abbreviation    String
-  continentId     String
-  continent       Continent       @relation(name: "ContinentToCountry", fields: [continentId], references: [id], onUpdate: Cascade)
-  logo            Logo?           @relation(name: "LogoToCountry")
-  cities          City[]          @relation(name: "CountryToCity")
-  competitions    Competition[]   @relation(name: "CountryToCompetition")
-  environmentMode EnvironmentMode @default(VIRTUAL)
-  createdAt       DateTime        @default(now()) @map("createdAt")
-  updatedAt       DateTime        @updatedAt @map("updatedAt")
+    id      String   @id @default(cuid())
+    name    String   @unique
+    code    String?
+    flag    String?
+    leagues League[]
 }
 
-model City {
-  id              String          @id @default(cuid())
-  name            String          @unique
-  countryId       String
-  country         Country         @relation(name: "CountryToCity", fields: [countryId], references: [id], onUpdate: Cascade)
-  environmentMode EnvironmentMode @default(VIRTUAL)
-  createdAt       DateTime        @default(now()) @map("createdAt")
-  updatedAt       DateTime        @updatedAt @map("updatedAt")
+model League {
+    id         String      @id @default(cuid())
+    externalId Int         @unique
+    name       String      @unique
+    countryId  String?
+    country    Country?    @relation(fields: [countryId], references: [id])
+    type       String?
+    logo       String?
+    flag       String?
+    teams      Team[]
+    standings  Standings[]
 }
 
-model Sport {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  type      SportType @default(TEAM)
-  logo      Logo?     @relation(name: "LogoToSport")
-  players   Player[]  @relation(name: "SportToPlayer")
-  createdAt DateTime  @default(now()) @map("createdAt")
-  updatedAt DateTime  @updatedAt @map("updatedAt")
+model Standings {
+    id              String        @id @default(cuid())
+    season          Int
+    rank            Int
+    form            String
+    description     String?
+    points          Int
+    goalsDiff       Int
+    group           String
+    status          String?
+    update          String?
+    teamId          String
+    leagueId        String
+    standingsAllId  String
+    standingsHomeId String
+    standingsAwayId String
+    league          League        @relation(fields: [leagueId], references: [id])
+    team            Team          @relation(fields: [teamId], references: [id])
+    standingsAll    StandingsAll  @relation(fields: [standingsAllId], references: [id])
+    standingsHome   StandingsHome @relation(fields: [standingsHomeId], references: [id])
+    standingsAway   StandingsAway @relation(fields: [standingsAwayId], references: [id])
 }
 
-// model Season {
-//   id        String   @id @default(cuid())
-//   name      String   @unique
-//   createdAt DateTime @default(now()) @map("createdAt")
-//   updatedAt DateTime @updatedAt @map("updatedAt")
-// }
-
-model Transfer {
-  id           String       @id @default(cuid())
-  date         DateTime
-  playerId     String
-  player       Player       @relation(name: "PlayerToTransfer", fields: [playerId], references: [id])
-  fromTeamId   String
-  fromTeam     Team         @relation(name: "FromTeamToTransfer", fields: [fromTeamId], references: [id])
-  toTeamId     String
-  toTeam       Team         @relation(name: "ToTeamToTransfer", fields: [toTeamId], references: [id])
-  transferType TransferType @default(FREE_AGENT)
-  transferFee  BigInt?
-  currency     Currency     @default(EUR)
-  createdAt    DateTime     @default(now()) @map("createdAt")
-  updatedAt    DateTime     @updatedAt @map("updatedAt")
-
-  @@index([playerId, fromTeamId, toTeamId])
+model StandingsAll {
+    id           String      @id @default(cuid())
+    played       Int
+    win          Int
+    draw         Int
+    lose         Int
+    goalsFor     Int
+    goalsAgainst Int
+    standings    Standings[]
 }
 
-model Jersey {
-  id          String     @id @default(cuid())
-  teamId      String
-  team        Team       @relation(fields: [teamId], references: [id])
-  playerId    String?
-  player      Player?    @relation(fields: [playerId], references: [id])
-  jerseryType JerseyType @default(HOME)
-  season      Int
-  number      Int?
-  color       String?
-  sponsor     String?
-  size        String?
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime   @default(now()) @map("createdAt")
-  updatedAt   DateTime   @updatedAt @map("updatedAt")
+model StandingsHome {
+    id           String      @id @default(cuid())
+    played       Int
+    win          Int
+    draw         Int
+    lose         Int
+    goalsFor     Int
+    goalsAgainst Int
+    standings    Standings[]
 }
 
-model Injury {
-  id        String     @id @default(cuid())
-  player    Player     @relation(name: "PlayerToInjury", fields: [playerId], references: [id])
-  playerId  String
-  type      InjuryType
-  startDate DateTime
-  endDate   DateTime?
-  createdAt DateTime   @default(now()) @map("createdAt")
-  updatedAt DateTime   @updatedAt @map("updatedAt")
+model StandingsAway {
+    id           String      @id @default(cuid())
+    played       Int
+    win          Int
+    draw         Int
+    lose         Int
+    goalsFor     Int
+    goalsAgainst Int
+    standings    Standings[]
 }
-
-model Stadium {
-  id              String          @id @default(cuid())
-  name            String          @unique
-  teams           Team[]          @relation(name: "StadiumToTeam")
-  environmentMode EnvironmentMode @default(REALITY)
-  createdAt       DateTime        @default(now()) @map("createdAt")
-  updatedAt       DateTime        @updatedAt @map("updatedAt")
-}
-
-model TeamOrganization {
-  id              String          @id @default(cuid())
-  name            String          @unique
-  teams           Team[]          @relation(name: "TeamOrganizationToTeam")
-  environmentMode EnvironmentMode @default(REALITY)
-  createdAt       DateTime        @default(now()) @map("createdAt")
-  updatedAt       DateTime        @updatedAt @map("updatedAt")
-}
-
-model Goal {
-  id        String    @id @default(cuid())
-  playerId  String
-  player    Player    @relation(name: "PlayerToGoal", fields: [playerId], references: [id], onUpdate: Cascade)
-  matchId   String
-  match     Match     @relation(name: "GoalToMatch", fields: [matchId], references: [id], onUpdate: Cascade)
-  minute    Int
-  type      GoalType?
-  createdAt DateTime  @default(now()) @map("createdAt")
-  updatedAt DateTime  @updatedAt @map("updatedAt")
-
-  @@index([playerId, matchId, minute])
-}
-
-// model CompetitionTeam {
-//   id            String      @id @default(cuid())
-//   competition   Competition @relation(fields: [competitionId], references: [id])
-//   competitionId String
-//   team          Team        @relation(fields: [teamId], references: [id])
-//   teamId        String
-//   createdAt     DateTime    @default(now()) @map("createdAt")
-//   updatedAt     DateTime    @updatedAt @map("updatedAt")
-
-//   @@index([competitionId, teamId])
-// }
-
-model Competition {
-  id            String         @id @default(cuid())
-  name          String         @unique
-  countryId     String?
-  country       Country?       @relation(name: "CountryToCompetition", fields: [countryId], references: [id], onUpdate: Cascade)
-  // seasons       Season[]
-  playerSeasons PlayerSeason[] @relation(name: "CompetitionToPlayerSeason")
-  confederation Confederation
-  teams         Team[]         @relation(name: "TeamToCompetition")
-  logo          Logo?          @relation(name: "LogoToCompetition")
-  // activeRound String
-  createdAt     DateTime       @default(now()) @map("createdAt")
-  updatedAt     DateTime       @updatedAt @map("updatedAt")
-}
-
-// model Season {
-//   id           String        @id @default(cuid())
-//   name         String        @unique
-//   yearStart    Int
-//   yearEnd      Int
-//   competitions Competition[]
-//   // trophies     Trophy[]
-//   // trophyId     String?
-//   // trophy       Trophy?       @relation(name: "SeasonToTrophy", fields: [trophyId], references: [id])
-//   createdAt    DateTime      @default(now()) @map("createdAt")
-//   updatedAt    DateTime      @updatedAt @map("updatedAt")
-// }
-
-// model Trophy {
-//   id        String   @id @default(cuid())
-//   name      String   @unique
-//   seasons   Season[] @relation(name: "SeasonToTrophy")
-//   logo      Logo?    @relation("LogoToTrophy")
-//   createdAt DateTime @default(now()) @map("createdAt")
-//   updatedAt DateTime @updatedAt @map("updatedAt")
-// }
 
 model Team {
-  id                String           @id @default(cuid())
-  name              String           @unique
-  abbreviation      String?
-  nicknames         String[]
-  chairman          String[]
-  manager           String?
-  fans              Account[]
-  stadiumId         String
-  stadium           Stadium          @relation(name: "StadiumToTeam", fields: [stadiumId], references: [id], onUpdate: Cascade)
-  sex               Sex              @default(MALE)
-  teamOranizationId String
-  teamOrganization  TeamOrganization @relation(name: "TeamOrganizationToTeam", fields: [teamOranizationId], references: [id], onUpdate: Cascade)
-  players           Player[]         @relation(name: "TeamToPlayer")
-  homeMatches       Match[]          @relation(name: "HomeTeamToMatch")
-  awayMatches       Match[]          @relation(name: "AwayTeamToMatch")
-  jerseys           Jersey[]
-  competitions      Competition[]    @relation(name: "TeamToCompetition")
-  playerSeasons     PlayerSeason[]   @relation(name: "TeamToPlayerSeason")
-  transfersIn       Transfer[]       @relation(name: "ToTeamToTransfer")
-  transfersOut      Transfer[]       @relation(name: "FromTeamToTransfer")
-  createdAt         DateTime         @default(now()) @map("createdAt")
-  updatedAt         DateTime         @updatedAt @map("updatedAt")
-  startingLineup    StartingLineup[]
+    id         String      @id @default(cuid())
+    externalId Int         @unique
+    name       String
+    logo       String
+    leagues    League[]
+    standings  Standings[]
 }
 
-model Match {
-  id             String           @id @default(cuid())
-  type           MatchType        @default(OTHER)
-  homeTeamId     String
-  homeTeam       Team             @relation(name: "HomeTeamToMatch", fields: [homeTeamId], references: [id])
-  awayTeamId     String
-  awayTeam       Team             @relation(name: "AwayTeamToMatch", fields: [awayTeamId], references: [id])
-  halftime       HalfTime?        @relation(name: "MatchToHalfTime")
-  fulltime       FullTime?        @relation(name: "MatchToFullTime")
-  extratime      ExtraTime?       @relation(name: "MatchToExtraTime")
-  penalty        Penalty?         @relation(name: "MatchToPenalty")
-  stats          Stats?           @relation(name: "StatsToMatch")
-  goals          Goal[]           @relation(name: "GoalToMatch")
-  players        PlayerToMatch[]  @relation(name: "PlayerToMatch")
-  startingLineup StartingLineup[]
-  bench          Bench[]
-  missingPlayers MissingPlayer[]
-  // startingLineUp StartingLineup[] @relation(name: "StartingLineupToMatch")
-  substitutions  Substitution[]   @relation(name: "SubstitutionToMatch")
-  cards          Card[]           @relation(name: "CardToMatch")
-  // yellowCards    YellowCard[]     @relation(name: "YellowCardToMatch")
-  // redCards       RedCard[]        @relation(name: "RedCardToMatch")
-  formation      FormationType
-  playerSeasons  PlayerSeason[]   @relation(name: "MatchToPlayerSeason")
-  odds           Odds[]           @relation(name: "OddsToMatch")
-  date           DateTime
-  timezone       String?
-  referee        String?
-  createdAt      DateTime         @default(now()) @map("createdAt")
-  updatedAt      DateTime         @updatedAt @map("updatedAt")
-}
-
-model Stats {
-  id               String   @id @default(cuid())
-  matchId          String   @unique
-  match            Match    @relation(name: "StatsToMatch", fields: [matchId], references: [id])
-  expectedGoals    Decimal?
-  possession       Decimal
-  attempts         Int
-  attemptsOnGoal   Int
-  attemptsOffGoal  Int
-  attacks          Int?
-  dangerousAttacks Int?
-  clearances       Int?
-  freeKicks        Int?
-  cornerKicks      Int?
-  offsides         Int?
-  throwIns         Int?
-  goalkeeperSaves  Int
-  fouls            Int
-  yellowCards      Int
-  redCards         Int?
-}
-
-model Player {
-  id             String           @id @default(cuid())
-  name           String
-  surname        String
-  middlename     String?
-  age            DateTime?
-  position       SportsPosition?
-  shirt          Int?
-  marketValue    Int?
-  team           Team?            @relation(name: "TeamToPlayer", fields: [teamId], references: [id], onUpdate: Cascade)
-  teamId         String?
-  jerseys        Jersey[]
-  status         PlayerStatus     @default(ACTIVE)
-  seasons        PlayerSeason[]   @relation(name: "PlayerToPlayerSeason")
-  // seasons        Season[] @relation(name: "PlayerToSeason")
-  sportId        String
-  matches        PlayerToMatch[]  @relation(name: "PlayerToMatch")
-  sport          Sport            @relation(name: "SportToPlayer", fields: [sportId], references: [id], onUpdate: Cascade)
-  matchesStart   StartingLineup[] @relation(name: "StartingLineupToPlayer")
-  matchesBench   Bench[]          @relation(name: "BenchToPlayer")
-  matchesMissing MissingPlayer[]  @relation(name: "MissingPlayerToPlayer")
-  goals          Goal[]           @relation(name: "PlayerToGoal")
-  substituteIn   Substitution[]   @relation(name: "SubstitutionToPlayerIn")
-  substituteOut  Substitution[]   @relation(name: "SubstitutionToPlayerOut")
-  cards          Card[]           @relation(name: "CardToPlayer")
-  transfers      Transfer[]       @relation(name: "PlayerToTransfer")
-  injuries       Injury[]         @relation(name: "PlayerToInjury")
-  createdAt      DateTime         @default(now()) @map("createdAt")
-  updatedAt      DateTime         @updatedAt @map("updatedAt")
-}
-
-model TeamSeason {
-  id String @id @default(cuid())
-}
-
-model PlayerSeason {
-  id          String         @id @default(cuid())
-  seasonStart DateTime
-  seasonEnd   DateTime
-  player      Player         @relation(name: "PlayerToPlayerSeason", fields: [playerId], references: [id])
-  playerId    String         @unique
-  team        Team[]         @relation(name: "TeamToPlayerSeason")
-  competition Competition[]  @relation(name: "CompetitionToPlayerSeason")
-  matches     Match[]        @relation(name: "MatchToPlayerSeason")
-  appearances Int?
-  goals       Int?
-  assists     Int?
-  cleanSheets Int?
-  yellowCards Int?
-  redCards    Int?
-  position    SportsPosition @default(FOOTBALL_GOALKEEPER)
-  createdAt   DateTime       @default(now()) @map("createdAt")
-  updatedAt   DateTime       @updatedAt @map("updatedAt")
-}
-
-model PlayerToMatch {
-  id             String @id @default(cuid())
-  playerId       String @unique
-  player         Player @relation(name: "PlayerToMatch", fields: [playerId], references: [id])
-  matchId        String @unique
-  match          Match  @relation(name: "PlayerToMatch", fields: [matchId], references: [id])
-  minutesPlayed  Int?
-  goals          Int?
-  assists        Int?
-  chancesCreated Int?
-  yellowCards    Int?
-  redCards       Int?
-
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-}
-
-// model PlayerSport {
-//   playerId String @map("playerId")
-//   player   Player @relation(fields: [playerId], references: [id])
-
-//   sportId String @map("sportId")
-//   sport   Sport  @relation(fields: [sportId], references: [id])
-
-//   position SportsPosition? // You can have sport-specific fields here
-
-//   // Add other common fields that apply to players in different sports
-//   // createdAt DateTime @default(now()) @map("createdAt")
-//   // updatedAt DateTime @updatedAt @map("updatedAt")
-//   @@id([playerId, sportId])
-// }
-
-model StartingLineup {
-  id        String   @id @default(cuid())
-  matchId   String   @unique
-  match     Match    @relation(fields: [matchId], references: [id])
-  teamId    String   @unique
-  team      Team     @relation(fields: [teamId], references: [id])
-  players   Player[] @relation("StartingLineupToPlayer")
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-}
-
-model Bench {
-  id        String   @id @default(cuid())
-  matchId   String   @unique
-  match     Match    @relation(fields: [matchId], references: [id])
-  players   Player[] @relation("BenchToPlayer")
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-}
-
-model MissingPlayer {
-  id        String   @id @default(cuid())
-  matchId   String   @unique
-  match     Match    @relation(fields: [matchId], references: [id])
-  players   Player[] @relation(name: "MissingPlayerToPlayer")
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-}
-
-model Substitution {
-  id          String         @id @default(cuid())
-  playerOutId String
-  playerOut   Player         @relation(name: "SubstitutionToPlayerOut", fields: [playerOutId], references: [id])
-  playerInId  String
-  playerIn    Player         @relation(name: "SubstitutionToPlayerIn", fields: [playerInId], references: [id])
-  matchId     String
-  match       Match          @relation(name: "SubstitutionToMatch", fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  // position    SportsPosition
-  createdAt   DateTime       @default(now()) @map("createdAt")
-  updatedAt   DateTime       @updatedAt @map("updatedAt")
-
-  @@index([matchId, playerOutId, playerInId])
-}
-
-model Card {
-  id        String   @id @default(cuid())
-  playerId  String
-  player    Player   @relation(name: "CardToPlayer", fields: [playerId], references: [id])
-  matchId   String
-  match     Match    @relation(name: "CardToMatch", fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  minute    Int?
-  cardType  CardType @default(YELLOW)
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-
-  @@index([playerId, matchId, cardType])
-}
-
-model HalfTime {
-  id      String @id @default(cuid())
-  home    Int
-  away    Int
-  matchId String @unique
-  match   Match  @relation(name: "MatchToHalfTime", fields: [matchId], references: [id], onUpdate: Cascade)
-}
-
-model FullTime {
-  id      String @id @default(cuid())
-  home    Int
-  away    Int
-  matchId String @unique
-  match   Match  @relation(name: "MatchToFullTime", fields: [matchId], references: [id], onUpdate: Cascade)
-}
-
-model ExtraTime {
-  id      String @id @default(cuid())
-  home    Int
-  away    Int
-  matchId String @unique
-  match   Match  @relation(name: "MatchToExtraTime", fields: [matchId], references: [id], onUpdate: Cascade)
-}
-
-model Penalty {
-  id      String @id @default(cuid())
-  home    Int
-  away    Int
-  matchId String @unique
-  match   Match  @relation(name: "MatchToPenalty", fields: [matchId], references: [id], onUpdate: Cascade)
-}
-
-model Odds {
-  id           String   @id @default(cuid())
-  matchId      String
-  match        Match    @relation(name: "OddsToMatch", fields: [matchId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  homeTeamOdds Decimal
-  awayTeamOdds Decimal
-  drawOdds     Decimal
-  createdAt    DateTime @default(now()) @map("createdAt")
-  updatedAt    DateTime @updatedAt @map("updatedAt")
-
-  @@index([matchId])
-}
-
-model Ticket {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  reality   Boolean  @default(false)
-  odds      Decimal
-  winnings  Decimal
-  bonus     Decimal
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
-}
-
-model Logo {
-  id            String       @id @default(cuid())
-  url           String
-  countryId     String?      @unique
-  country       Country?     @relation(name: "LogoToCountry", fields: [countryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  competitionId String?      @unique
-  competition   Competition? @relation(name: "LogoToCompetition", fields: [competitionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sportId       String?      @unique
-  sport         Sport?       @relation(name: "LogoToSport", fields: [sportId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId        String?      @unique
-  user          User?        @relation(name: "LogoToUser", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  // trophyId      String       @unique
-  // trophy        Trophy       @relation(name: "LogoToTrophy", fields: [trophyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  createdAt     DateTime     @default(now()) @map("createdAt")
-  updatedAt     DateTime     @updatedAt @map("updatedAt")
-}
-
-enum UserRole {
-  ADMIN
-  SUPPORT
-  USER
-}
-
-enum PlayerStatus {
-  ACTIVE
-  INACTIVE
-  COACH
-  MANAGER
-  DIRECTOR
-  OTHER
-}
-
-enum CompetitionType {
-  DOMESTIC
-  NATIONAL
-  INTERNATIONAL
-}
-
-// enum MatchOutcome {
-//   WIN
-//   LOSS
-//   DRAW
-//   DRAW_WIN
-//   DRAW_LOSS
-// }
-
-enum FormationType {
-  FOUR_TWO_TWO
-  FOUR_FOUR_TWO
-  FOUR_THREE_THREE
-  FIVE_THREE_TWO
-  OTHER
-}
-
-enum ResultType {
-  HOME_TEAM_WIN
-  AWAY_TEAM_WIN
-  DRAW
-  POSTPONED
-  CANCELED
-  OTHER
-}
-
-enum MatchType {
-  NATIONS_CONTINENTAL
-  NATIONS_INTERCONTINENTAL
-  NATIONAL_LEAGUE
-  NATIONAL_CUP
-  INTERNATIONAL_LEAGUE
-  TROPHY_CUP
-  OTHER
-}
-
-enum EnvironmentMode {
-  REALITY
-  VIRTUAL
-}
-
-// enum TicketType {
-//   REGULAR
-//   SYSTEM
-// }
-
-// enum TicketActivity {
-//   ACTIVE
-//   INACTIVE
-// }
-
-// enum TicketStatus {
-//   WIN
-//   LOSS
-// }
-
-enum Sex {
-  MALE
-  FEMALE
-}
-
-enum SportType {
-  INDIVIDUAL
-  TEAM
-}
-
-enum SportsPosition {
-  //...
-  FOOTBALL_GOALKEEPER
-  FOOTBALL_DEFENDER
-  FOOTBALL_MIDFIELDER
-  FOOTBALL_FORWARD
-  FOOTBALL_STRIKER
-  FOOTBALL_RIGHT_BACK
-  FOOTBALL_LEFT_BACK
-  FOOTBALL_RIGHT_MIDFIELDER
-  FOOTBALL_LEFT_MIDFIELDER
-  FOOTBALL_ATTACKING_MIDFIELDER
-  FOOTBALL_DEFENSIVE_MIDFIELDER
-  FOOTBALL_CENTRAL_MIDFIELDER
-  FOOTBALL_RIGHT_WINGER
-  FOOTBALL_LEFT_WINGER
-  FOOTBALL_CENTER_BACK
-  FOOTBALL_CENTER_FORWARD
-  FOOTBALL_SECOND_STRIKER
-  FOOTBALL_SUBSTITUTE
-  // ...
-}
-
-enum TransferType {
-  FREE_AGENT
-  LOAN
-  PERMANENT_TRANSFER
-  SWAP
-  CONTRACT_EXTENSION
-  OTHER
-}
-
-enum Currency {
-  USD // United States Dollar
-  EUR // Euro
-  GBP // British Pound Sterling
-  CNY // Chinese Yuan Renminbi
-  JPY // Japanese Yen
-}
-
-enum InjuryType {
-  MUSCLE_STRAIN
-  ACL_INJURY
-  CONCUSSION
-  SPRAINED_ANKLE
-  OTHER
-}
-
-enum CardType {
-  YELLOW
-  RED
-}
-
-enum GoalType {
-  REGULAR
-  PENALTY
-  OWN_GOAL
-  FREE_KICK
-  HEADER
-  VOLLEY
-  CHIP
-  LONG_RANGE
-  TAP_IN
-  SCRAMBLE
-  COUNTER_ATTACK
-  TEAM_GOAL
-  INDIVIDUAL_EFFORT
-  HEADER_FROM_CROSS
-  PENALTY_SHOOTOUT
-  DIVING_HEADER
-  BICYCLE_KICK
-  DIRECT_FREE_KICK
-  INDIRECT_FREE_KICK
-  REBOUND
-  DEFLECTED
-  CURLED_SHOT
-  CLOSE_RANGE
-  FAR_RANGE
-  SOLO_RUN
-  FAST_BREAK
-  DRIBBLE_PAST_DEFENDERS
-  POACHERS_GOAL
-  ACROBATIC_FINISH
-  SLIDING_FINISH
-  POWERFUL_SHOT
-  PLACED_SHOT
-  FIRST_TIME_FINISH
-  HALF_VOLLEY
-  DELICATE_CHIP
-  SOLO_GOAL
-  LAST_MINUTE_GOAL
-}
-
-enum JerseyType {
-  HOME
-  AWAY
-  ALTERNATIVE
-}
-
-enum Confederation {
-  CAF
-  AFC
-  UEFA
-  CONCACAF
-  OFC
-  CONMEBOL
-  CONIFA
-  IGA
-  OTHER
-}
+// END

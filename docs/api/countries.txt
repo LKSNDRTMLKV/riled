@@ -1,0 +1,22 @@
+     2022 Test
+     Group Phase Only..
+     01 - World Cup - Countries - Standings: Array of arrays
+     02 - Champions League -  Standings: Array of arrays
+     03 - Europa League - Standings: Array of arrays
+     04 - /
+     05 - UEFA Nations League - Countries - Standings: Array of arrays
+     06 - /
+     07 - /
+     08 - /
+     09 - /
+     10 - /
+     11 - CONMEBOL Sudamericana - CL South America? - Standings: Array of arrays
+     12 - CAF Champions League - CL Africa? - Standings: Array of arrays
+     13 - CONMEBOL Libertadores - CL South America? - Standings: Array of arrays
+     14 - /
+     15 - /
+     16 - /
+     17 - AFC Champions League - CL Asia? - Standings: Array of arrays
+     20 - 31 Qualification Nations Cup
+     32 - /
+     33 - 
